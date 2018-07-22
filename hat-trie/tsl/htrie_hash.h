@@ -106,7 +106,7 @@ public:
     using const_prefix_iterator = htrie_hash_iterator<true, true>;
     
     
-private:
+public:
     using array_hash_type = 
         typename std::conditional<
                         has_value<T>::value, 
@@ -116,7 +116,7 @@ private:
                                        KeySizeT, std::uint16_t, tsl::ah::power_of_two_growth_policy<4>>>::type;
                                        
     
-private:
+public:
     /*
      * The tree is mainly composed of two nodes types: trie_node and hash_node which both have anode as base class.
      * Each child is either a hash_node or a trie_node.
@@ -202,7 +202,7 @@ private:
             return m_parent_node;
         }
         
-    protected:
+    public:
         enum class node_type: unsigned char {
             HASH_NODE,
             TRIE_NODE
