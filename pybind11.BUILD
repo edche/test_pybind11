@@ -1,8 +1,6 @@
 C_OPTS = [
     "-O3",
-    "-shared",
     "-std=c++11",
-    "-undefined dynamic_lookup", 
     "-Iexternal/pyheaders", 
     "-std=c++11"
     ]
