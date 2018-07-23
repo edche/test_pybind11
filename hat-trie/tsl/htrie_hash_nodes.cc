@@ -28,40 +28,56 @@ using htrie_hash_prefix_iterator = htrie_hash::htrie_hash_iterator<false, true>;
 using htrie_hash_const_prefix_iterator = htrie_hash::htrie_hash_iterator<true, true>;
 
 /*
-htrie_hash(const Hash& hash, float max_load_factor, size_type burst_threshold): 
-                                         m_root(nullptr), m_nb_elements(0), 
-                                         m_hash(hash), m_max_load_factor(max_load_factor)
-    {
-        this->burst_threshold(burst_threshold);
-    }
-    
-    htrie_hash(const htrie_hash& other): m_root(nullptr), m_nb_elements(other.m_nb_elements), 
-                                         m_hash(other.m_hash), m_max_load_factor(other.m_max_load_factor),
-                                         m_burst_threshold(other.m_burst_threshold)
-    {
-        if(other.m_root != nullptr) {
-            if(other.m_root->is_hash_node()) {
-                m_root.reset(new hash_node(other.m_root->as_hash_node()));
-            }
-            else {
-                m_root.reset(new trie_node(other.m_root->as_trie_node()));
-            }
+    std::pair<iterator, bool> insert(const CharT* key, size_type key_size, int&& value) {
+       if(key_size > max_key_size()) {
+            throw std::length_error("Key is too long.");
         }
+        
+        if(m_root == nullptr) {
+            m_root.reset(new hash_node(m_hash, m_max_load_factor));
+        }
+        
+        return insert_impl(*m_root, key, key_size, value);
     }
-    
-    htrie_hash(htrie_hash&& other) noexcept(std::is_nothrow_move_constructible<Hash>::value)
-                                  : m_root(std::move(other.m_root)),
-                                    m_nb_elements(other.m_nb_elements),
-                                    m_hash(std::move(other.m_hash)),
-                                    m_max_load_factor(other.m_max_load_factor),
-                                    m_burst_threshold(other.m_burst_threshold)
-    {
-        other.clear();
+
+    struct str_hash {
+    std::size_t operator()(const CharT* key, std::size_t key_size) const {
+        static const std::size_t init = std::size_t((sizeof(std::size_t) == 8)?0xcbf29ce484222325:0x811c9dc5);
+        static const std::size_t multiplier = std::size_t((sizeof(std::size_t) == 8)?0x100000001b3:0x1000193);
+        
+        std::size_t hash = init;
+        for (std::size_t i = 0; i < key_size; ++i) {
+            hash ^= key[i];
+            hash *= multiplier;
+        }
+        
+        return hash;
     }
+};  
 */
+
+
 void InitHatTrieHash(py::module &m) {
     py::class_<htrie_hash>(m, "HatTrieHash")
-    .def(py::init<Hash&, float, std::size_t>());
+    .def(py::init<Hash&, float, std::size_t>())
+    .def(py::init<htrie_hash>())
+    .def("begin", (htrie_hash_const_iterator (htrie_hash::*)() const) &htrie_hash::begin)
+    .def("cbegin", (htrie_hash_const_iterator (htrie_hash::*)() const) &htrie_hash::cbegin)
+    .def("end", (htrie_hash_const_iterator (htrie_hash::*)() const) &htrie_hash::end) 
+    .def("cend", (htrie_hash_const_iterator (htrie_hash::*)() const) &htrie_hash::cend)
+    .def("empty", &htrie_hash::empty)
+    .def("size", &htrie_hash::size)
+    .def("max_size", &htrie_hash::max_size)
+    .def("max_key_size", &htrie_hash::max_key_size)
+    .def("shrink_to_fit", &htrie_hash::shrink_to_fit)
+    .def("clear", &htrie_hash::clear)
+    .def("erase", (htrie_hash_iterator (htrie_hash::*)(htrie_hash_const_iterator)) &htrie_hash::erase)
+    .def("erase", (htrie_hash_iterator (htrie_hash::*)(htrie_hash_const_iterator, htrie_hash_const_iterator)) &htrie_hash::erase) 
+    .def("erase", (std::size_t (htrie_hash::*)(const CharT*, std::size_t)) &htrie_hash::erase)
+    .def("erase_prefix", (std::size_t (htrie_hash::*)(const CharT*, std::size_t)) &htrie_hash::erase_prefix)
+    .def("swap", &htrie_hash::swap)
+    .def("insert", (std::pair<htrie_hash::iterator, bool> (htrie_hash::*)(const CharT*, std::size_t, int)) &htrie_hash::insert)
+    ;
 }
 
 void InitHTrieHashIterator(py::module &m) {
@@ -109,12 +125,9 @@ void InitANodePy(py::class_<tsl_anode> &node) {
     .def(py::init<tsl_anode::node_type, CharT>())
     .def("is_trie_node", &tsl_anode::is_trie_node)
     .def("is_hash_node", &tsl_anode::is_hash_node)
-    .def("as_trie_node", (tsl_trie_node& (tsl_anode::*)()) &tsl_anode::as_trie_node)
     .def("as_trie_node", (const tsl_trie_node& (tsl_anode::*)() const) &tsl_anode::as_trie_node)
-    .def("as_hash_node", (tsl_hash_node& (tsl_anode::*)()) &tsl_anode::as_hash_node)
     .def("as_hash_node", (const tsl_hash_node& (tsl_anode::*)() const) &tsl_anode::as_hash_node)
     .def("child_of_char", &tsl_anode::child_of_char)
-    .def("parent", (tsl_trie_node* (tsl_anode::*)()) &tsl_anode::parent)
     .def("parent", (const tsl_trie_node* (tsl_anode::*)() const) &tsl_anode::parent);
 
     py::enum_<tsl_anode::node_type>(node, "node_type")
@@ -141,11 +154,8 @@ void InitTrieNodePy(py::class_<tsl_trie_node> &trie_node) {
     .def(py::init<const tsl_trie_node &>())
     .def("nb_children", &tsl_trie_node::nb_children)
     .def("empty", &tsl_trie_node::empty)
-    .def("first_child", (tsl_anode* (tsl_trie_node::*)()) &tsl_trie_node::first_child) 
     .def("first_child", (const tsl_anode* (tsl_trie_node::*)() const) &tsl_trie_node::first_child) 
-    .def("next_child", (tsl_anode* (tsl_trie_node::*)(const tsl_anode&)) &tsl_trie_node::next_child)
     .def("next_child", (const tsl_anode* (tsl_trie_node::*)(const tsl_anode&) const) &tsl_trie_node::next_child) 
-    .def("most_left_descendant_value_trie_node", (tsl_trie_node& (tsl_trie_node::*)()) &tsl_trie_node::most_left_descendant_value_trie_node)
     .def("most_left_descendant_value_trie_node", (const tsl_trie_node& (tsl_trie_node::*)() const) &tsl_trie_node::most_left_descendant_value_trie_node)
     .def("get_child", &tsl_trie_node::get_child)
     .def("get_val_node", &tsl_trie_node::get_val_node);

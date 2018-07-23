@@ -5,14 +5,10 @@ C_OPTS = [
     ]
 
 cc_library(
-    name = "pybind11",
+    name = "cityhash",
     hdrs = glob([
-      "include/**/*.h",
+      "src/*.h",
     ]),
-    deps = [
-        "@pyheaders//:headers",
-         ],
     copts = C_OPTS,
     visibility = ["//visibility:public"],
 )
-

@@ -7,19 +7,16 @@ C_OPTS = [
     ]
 
 cc_library(
-    name = "tsl_libs",
-    hdrs = glob(["**/*.h"]),
-)
-
-
-cc_library(
    name = "htrie_hash_nodes",
    srcs = [ "htrie_hash_nodes.cc" ],
    hdrs = ["htrie_hash.h"],
    deps = [
        "@pyheaders//:headers", 
        "//external:pybind11-lib",
-       ":tsl_libs"
+       "//external:cityhash-lib",
+       "//hat-trie/tsl/array-hash/tsl:tsl_libs"
     ],
    copts = C_OPTS,
 )
+
+#/Users/edche/work/test_pybind11/hat-trie/tsl/array-hash/tsl/BUILD

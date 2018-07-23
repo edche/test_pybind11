@@ -948,6 +948,18 @@ public:
         m_root.reset(nullptr);
         m_nb_elements = 0;
     }
+
+    std::pair<iterator, bool> insert(const CharT* key, size_type key_size, int value) {
+       if(key_size > max_key_size()) {
+            throw std::length_error("Key is too long.");
+        }
+        
+        if(m_root == nullptr) {
+            m_root.reset(new hash_node(m_hash, m_max_load_factor));
+        }
+        
+        return insert_impl(*m_root, key, key_size, value);
+    }
     
     template<class... ValueArgs>
     std::pair<iterator, bool> insert(const CharT* key, size_type key_size, ValueArgs&&... value_args) {
