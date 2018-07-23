@@ -27,6 +27,43 @@ using htrie_hash_const_iterator = htrie_hash::htrie_hash_iterator<true, false>;
 using htrie_hash_prefix_iterator = htrie_hash::htrie_hash_iterator<false, true>;
 using htrie_hash_const_prefix_iterator = htrie_hash::htrie_hash_iterator<true, true>;
 
+/*
+htrie_hash(const Hash& hash, float max_load_factor, size_type burst_threshold): 
+                                         m_root(nullptr), m_nb_elements(0), 
+                                         m_hash(hash), m_max_load_factor(max_load_factor)
+    {
+        this->burst_threshold(burst_threshold);
+    }
+    
+    htrie_hash(const htrie_hash& other): m_root(nullptr), m_nb_elements(other.m_nb_elements), 
+                                         m_hash(other.m_hash), m_max_load_factor(other.m_max_load_factor),
+                                         m_burst_threshold(other.m_burst_threshold)
+    {
+        if(other.m_root != nullptr) {
+            if(other.m_root->is_hash_node()) {
+                m_root.reset(new hash_node(other.m_root->as_hash_node()));
+            }
+            else {
+                m_root.reset(new trie_node(other.m_root->as_trie_node()));
+            }
+        }
+    }
+    
+    htrie_hash(htrie_hash&& other) noexcept(std::is_nothrow_move_constructible<Hash>::value)
+                                  : m_root(std::move(other.m_root)),
+                                    m_nb_elements(other.m_nb_elements),
+                                    m_hash(std::move(other.m_hash)),
+                                    m_max_load_factor(other.m_max_load_factor),
+                                    m_burst_threshold(other.m_burst_threshold)
+    {
+        other.clear();
+    }
+*/
+void InitHatTrieHash(py::module &m) {
+    py::class_<htrie_hash>(m, "HatTrieHash")
+    .def(py::init<Hash&, float, std::size_t>());
+}
+
 void InitHTrieHashIterator(py::module &m) {
     py::class_<htrie_hash_iterator>(m, "HatTrieHashIterator")
     .def(py::init<>())
@@ -98,32 +135,7 @@ void InitValueNodePy(py::module &m) {
     .def(py::init<>());
 }
 
-void InitTrieNodeChildrenPy(py::module &m) {
-    py::class_<trie_node_children>(m, "TrieNodeChildren")
-    .def(py::init<>())
-    .def("__len__", [](const trie_node_children &v) { return v.size(); });
-    /*
-    .def("__iter__", [](trie_node_children &v) {
-       return py::make_iterator(v.begin(), v.end());
-    }, py::keep_alive<0, 1>()); 
-    */
-}
 void InitTrieNodePy(py::class_<tsl_trie_node> &trie_node) {
-    /*
-    class trie_node: public anode {
-    public:
-        FAILED typename std::array<std::unique_ptr<anode>, ALPHABET_SIZE>::iterator begin()
-        FAILED typename std::array<std::unique_ptr<anode>, ALPHABET_SIZE>::iterator end()
-
-        FAILED void set_child(CharT for_char, std::unique_ptr<anode> child)
-        
-        std::unique_ptr<anode>& child(CharT for_char)
-        const std::unique_ptr<anode>& child(CharT for_char)
-                
-        std::unique_ptr<value_node>& val_node()
-        const std::unique_ptr<value_node>& val_node()
-        
-*/
 
     trie_node.def(py::init<>())
     .def(py::init<const tsl_trie_node &>())
@@ -134,9 +146,9 @@ void InitTrieNodePy(py::class_<tsl_trie_node> &trie_node) {
     .def("next_child", (tsl_anode* (tsl_trie_node::*)(const tsl_anode&)) &tsl_trie_node::next_child)
     .def("next_child", (const tsl_anode* (tsl_trie_node::*)(const tsl_anode&) const) &tsl_trie_node::next_child) 
     .def("most_left_descendant_value_trie_node", (tsl_trie_node& (tsl_trie_node::*)()) &tsl_trie_node::most_left_descendant_value_trie_node)
-    .def("most_left_descendant_value_trie_node", (const tsl_trie_node& (tsl_trie_node::*)() const) &tsl_trie_node::most_left_descendant_value_trie_node);
-    //.def("val_node",  (std::unique_ptr<value_node>& (tsl_trie_node::*)()) &tsl_trie_node::val_node)
-    //.def("child", (std::unique_ptr<tsl_anode>& (tsl_trie_node::*)(CharT)) &tsl_trie_node::child)
+    .def("most_left_descendant_value_trie_node", (const tsl_trie_node& (tsl_trie_node::*)() const) &tsl_trie_node::most_left_descendant_value_trie_node)
+    .def("get_child", &tsl_trie_node::get_child)
+    .def("get_val_node", &tsl_trie_node::get_val_node);
 }
 
 /* BINDING CODE */
@@ -150,10 +162,10 @@ PYBIND11_MODULE(libhtrie_hash_nodes, m) {
     InitANodePy(node);
     InitHashNodePy(hash_node);
     InitValueNodePy(m);
-    InitTrieNodeChildrenPy(m);
     InitTrieNodePy(trie_node);
     InitHTrieHashIterator(m);
     InitHTrieHashConstIterator(m);
     InitHTrieHashPrefixIterator(m);
     InitHTrieHashPrefixConstIterator(m);
+    InitHatTrieHash(m);
 }

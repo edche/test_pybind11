@@ -360,6 +360,10 @@ public:
         std::unique_ptr<anode>& child(CharT for_char) noexcept {
             return m_children[as_position(for_char)];
         }
+
+        const anode* get_child(CharT for_char) const noexcept {
+            return m_children[as_position(for_char)].get();
+        }
         
         const std::unique_ptr<anode>& child(CharT for_char) const noexcept {
             return m_children[as_position(for_char)];
@@ -388,6 +392,10 @@ public:
         
         const std::unique_ptr<value_node>& val_node() const noexcept {
             return m_value_node;
+        }
+        
+        const value_node* get_val_node() const {
+            return m_value_node.get();
         }
         
     private:
