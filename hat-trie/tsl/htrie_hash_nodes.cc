@@ -14,13 +14,58 @@ using KeySizeT = std::uint8_t;
 static const std::size_t ALPHABET_SIZE = 
                         std::numeric_limits<typename std::make_unsigned<CharT>::type>::max() + 1;
 
-using tsl_anode = tsl::detail_htrie_hash::htrie_hash<CharT, T, Hash, KeySizeT>::anode;
-using tsl_trie_node = tsl::detail_htrie_hash::htrie_hash<CharT, T, Hash, KeySizeT>::trie_node;
-using tsl_hash_node = tsl::detail_htrie_hash::htrie_hash<CharT, T, Hash, KeySizeT>::hash_node;
-using array_hash_type = tsl::detail_htrie_hash::htrie_hash<CharT, T, Hash, KeySizeT>::array_hash_type;
+using htrie_hash = tsl::detail_htrie_hash::htrie_hash<CharT, T, Hash, KeySizeT>;
+using tsl_anode = htrie_hash::anode;
+using tsl_trie_node = htrie_hash::trie_node;
+using tsl_hash_node = htrie_hash::hash_node;
+using array_hash_type = htrie_hash::array_hash_type;
 using trie_node_children = std::array<std::unique_ptr<tsl_anode>, ALPHABET_SIZE>;
-
 using value_node = tsl::detail_htrie_hash::value_node<T>;
+
+using htrie_hash_iterator = htrie_hash::htrie_hash_iterator<false, false>;
+using htrie_hash_const_iterator = htrie_hash::htrie_hash_iterator<true, false>;
+using htrie_hash_prefix_iterator = htrie_hash::htrie_hash_iterator<false, true>;
+using htrie_hash_const_prefix_iterator = htrie_hash::htrie_hash_iterator<true, true>;
+
+void InitHTrieHashIterator(py::module &m) {
+    py::class_<htrie_hash_iterator>(m, "HatTrieHashIterator")
+    .def(py::init<>())
+    .def(py::init<const htrie_hash_iterator&>())
+    .def("key", (void (htrie_hash_iterator::*)(std::basic_string<CharT>& key_buffer_out) const) &htrie_hash_iterator::key)
+    .def("key", (std::basic_string<CharT> (htrie_hash_iterator::*)() const) &htrie_hash_iterator::key)
+    .def("get_current_trie_node", &htrie_hash_iterator::get_current_trie_node)
+    .def("get_current_hash_node", &htrie_hash_iterator::get_current_hash_node);
+}
+
+void InitHTrieHashConstIterator(py::module &m) {
+    py::class_<htrie_hash_const_iterator>(m, "HatTrieHashConstIterator")
+    .def(py::init<>())
+    .def(py::init<const htrie_hash_iterator&>())
+    .def("key", (void (htrie_hash_const_iterator::*)(std::basic_string<CharT>& key_buffer_out) const) &htrie_hash_const_iterator::key)
+    .def("key", (std::basic_string<CharT> (htrie_hash_const_iterator::*)() const) &htrie_hash_const_iterator::key)
+    .def("get_current_trie_node", &htrie_hash_const_iterator::get_current_trie_node)
+    .def("get_current_hash_node", &htrie_hash_const_iterator::get_current_hash_node);
+}
+
+void InitHTrieHashPrefixIterator(py::module &m) {
+    py::class_<htrie_hash_prefix_iterator>(m, "HatTrieHashPrefixIterator")
+    .def(py::init<>())
+    .def(py::init<const htrie_hash_prefix_iterator&>())
+    .def("key", (void (htrie_hash_prefix_iterator::*)(std::basic_string<CharT>& key_buffer_out) const) &htrie_hash_prefix_iterator::key)
+    .def("key", (std::basic_string<CharT> (htrie_hash_prefix_iterator::*)() const) &htrie_hash_prefix_iterator::key)
+    .def("get_current_trie_node", &htrie_hash_prefix_iterator::get_current_trie_node)
+    .def("get_current_hash_node", &htrie_hash_prefix_iterator::get_current_hash_node);
+}
+
+void InitHTrieHashPrefixConstIterator(py::module &m) {
+    py::class_<htrie_hash_const_prefix_iterator>(m, "HatTrieHashPrefixConstIterator")
+    .def(py::init<>())
+    .def(py::init<const htrie_hash_prefix_iterator&>())
+    .def("key", (void (htrie_hash_const_prefix_iterator::*)(std::basic_string<CharT>& key_buffer_out) const) &htrie_hash_const_prefix_iterator::key)
+    .def("key", (std::basic_string<CharT> (htrie_hash_const_prefix_iterator::*)() const) &htrie_hash_const_prefix_iterator::key)
+    .def("get_current_trie_node", &htrie_hash_const_prefix_iterator::get_current_trie_node)
+    .def("get_current_hash_node", &htrie_hash_const_prefix_iterator::get_current_hash_node);
+}
 
 void InitANodePy(py::class_<tsl_anode> &node) {
     node.def(py::init<tsl_anode::node_type>())
@@ -107,4 +152,8 @@ PYBIND11_MODULE(libhtrie_hash_nodes, m) {
     InitValueNodePy(m);
     InitTrieNodeChildrenPy(m);
     InitTrieNodePy(trie_node);
+    InitHTrieHashIterator(m);
+    InitHTrieHashConstIterator(m);
+    InitHTrieHashPrefixIterator(m);
+    InitHTrieHashPrefixConstIterator(m);
 }

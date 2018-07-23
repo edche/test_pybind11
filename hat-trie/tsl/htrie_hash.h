@@ -667,6 +667,14 @@ public:
         friend bool operator!=(const htrie_hash_iterator& lhs, const htrie_hash_iterator& rhs) { 
             return !(lhs == rhs); 
         }
+
+        trie_node_type* get_current_trie_node() {
+            return this->m_current_trie_node;
+        }
+
+        hash_node_type* get_current_hash_node() {
+            return this->m_current_hash_node;
+        }
         
     private:        
         template<bool P = IsPrefixIterator, typename std::enable_if<!P>::type* = nullptr> 
